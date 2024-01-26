@@ -51,10 +51,9 @@ class Snake:
             self.dead = True
             return
 
+        self.draw()
         if self.head == self.apple:
             self.eat()
-
-        self.draw()
 
     def changeDirection(self, newDirection: Directions):
         if self.isValidDirection(self.direction, newDirection):
@@ -75,10 +74,9 @@ class Snake:
             return (newX, newY) if isY else (newX, newY)
 
         if newX < 0 or newY < 0:
-
-            return (newX, extremes[-1] - 1) if isY else (extremes[-1], newY)
+            return (newX, GRID.HEIGHT - 1) if isY else (GRID.WIDTH - 1, newY)
         else:
-            return (newX, -1) if isY else (-1, newY)
+            return (newX, 0) if isY else (0, newY)
 
     def eat(self):
         self.score += 1
@@ -86,14 +84,15 @@ class Snake:
             self.dead = True
             return
         self.spawnNewApple()
+        self.draw()
         self.tail.append(Coordinates(self.head.x, self.head.y))
 
     def spawnNewApple(self):
         while True:
             x = randint(0, GRID.WIDTH - 1)
             y = randint(0, GRID.HEIGHT - 1)
-            if Coordinates(x, y) not in (self.head, self.tail):
-                apple = Coordinates(x, y)
+            if Coordinates(x,y) != self.head and Coordinates(x,y) not in self.tail:
+                apple = Coordinates(x,y)
                 break
         self.apple = apple
 
