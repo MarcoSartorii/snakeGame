@@ -83,9 +83,9 @@ class Snake:
         if self.score == (GRID.WIDTH * GRID.HEIGHT) - 1:
             self.dead = True
             return
+        self.tail.append(Coordinates(self.head.x, self.head.y))
         self.spawnNewApple()
         self.draw()
-        self.tail.append(Coordinates(self.head.x, self.head.y))
 
     def spawnNewApple(self):
         while True:
