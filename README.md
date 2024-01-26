@@ -1,6 +1,7 @@
 # snakeGame
 
 ---------- 26 Jan 2024 ----------
+
 This python script was tested in python3.11
 ```
 pyenv install 3.11
@@ -15,5 +16,6 @@ Hope tomorrow I can finish the tail.
 ☝️🤓 you should not leave commented code
 ```
 
-Follow me on Instagram!
-'https://instagram.com/marcosartorii_'
+Follow me on Instagram
+
+[https://instagram.com/marcosartorii_]
