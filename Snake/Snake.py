@@ -1,94 +1,118 @@
+import math
 import tkinter
 
-from CONSTS import side, SNAKE_COLOR, GRID, PACMAN_EFFECT, APPLE_COLOR
+from CONSTS import SQUARE_SIDE, SNAKE_COLOR, GRID, PACMAN_EFFECT, APPLE_COLOR, HEAD_COLOR, \
+    SQUARE_MARGIN
 from collections import namedtuple
 from random import randint
-from Directions import Direction
+from Directions import Directions
 
 Coordinates = namedtuple("Coords", "x y")
-ChessBoard = namedtuple("Coords", "width height")
 
 
 class Snake:
-    direction: Direction
+    direction: Directions
     head: Coordinates
     apple: Coordinates
     canvas: tkinter.Canvas
     score: int
+    tail: list[Coordinates]
     dead: bool
 
     def __init__(self, x: int = GRID.WIDTH // 2, y: int = GRID.HEIGHT // 2, canvas: tkinter.Canvas = None):
+        if canvas is None:
+            raise Exception("SNAKE'S CANVAS NONE")
         self.score = 0
         self.dead = False
         self.test = 1
-        if canvas is None:
-            raise Exception("SNAKE'S CANVAS NONE")
         self.canvas = canvas
         self.head = Coordinates(x, y)
+        self.tail = []
         self.spawnNewApple()
-        self.drawSnakeHead()
-        self.direction = Direction.UP
-
-
-    def changeDirection(self, newDirection: Direction):
-        if self.isValidDirection(self.direction, newDirection):
-            self.direction = newDirection
-
-    def drawSnakeHead(self):
-        self.canvas.create_rectangle(
-            self.getPixels(
-                self.head.x, self.head.y, self.head.x + 1, self.head.y + 1, margin=2
-            ),
-            fill=SNAKE_COLOR, outline="")
+        self.direction = Directions.UP
+        self.draw()
 
     def move(self):
-        # todo this is my Artificial Intelligence for now
-        """
-        if self.apple.x > self.head.x:
-            self.direction = Direction.RIGHT
-       if self.apple.x < self.head.x:
-            self.direction = Direction.LEFT
-        if self.apple.y > self.head.y:
-            self.direction = Direction.DOWN
-        if self.apple.y < self.head.y:
-            self.direction = Direction.UP
-        """
+        if self.dead:
+            return
+        newX, newY = self.head.x, self.head.y
+        if self.direction in (Directions.UP, Directions.DOWN):
+            newY = self.head.y - 1 if self.direction == Directions.UP else self.head.y + 1
+        if self.direction in (Directions.RIGHT, Directions.LEFT):
+            newX = self.head.x + 1 if self.direction == Directions.RIGHT else self.head.x - 1
 
-        if self.direction == Direction.UP:
-            newY = self.head.y - 1
-            if not self.isSnakeHittingTheWall(newY):
-                self.head = self.head._replace(y=self.head.y - 1)
-        if self.direction == Direction.DOWN:
-            newY = self.head.y + 1
-            if not self.isSnakeHittingTheWall(newY):
-                self.head = self.head._replace(y=newY)
-        if self.direction == Direction.RIGHT:
-            newX = self.head.x + 1
-            if not self.isSnakeHittingTheWall(newX):
-                self.head = self.head._replace(x=newX)
-        if self.direction == Direction.LEFT:
-            newX = self.head.x - 1
-            if not self.isSnakeHittingTheWall(newX):
-                self.head = self.head._replace(x=newX)
+        newX, newY = self.isSnakeHittingTheWall(newX, newY)
+
+        self.moveTail()
+        self.head = Coordinates(newX, newY)
+
+        if self.head in self.tail[1:]:
+            self.draw()
+            self.dead = True
+            return
 
         if self.head == self.apple:
             self.eat()
 
-        # TODO move tail but tail does not exist yet.
-        # TODO unlucky
-        self.drawSnakeHead()
-        self.drawApple()
+        self.draw()
 
-    def play(self):
-        print(self.head.x)
+    def changeDirection(self, newDirection: Directions):
+        if self.isValidDirection(self.direction, newDirection):
+            self.direction = newDirection
 
-    def drawApple(self):
+    def isSnakeHittingTheWall(self, newX: int, newY):
+        isY = self.direction in (Directions.UP, Directions.DOWN)
+        extremes = range(0, GRID.HEIGHT if isY else GRID.WIDTH)
+        if isY:
+            if newY in extremes:
+                return newX, newY
+        else:
+            if newX in extremes:
+                return newX, newY
+
+        if not PACMAN_EFFECT:
+            self.dead = True
+            return (newX, newY) if isY else (newX, newY)
+
+        if newX < 0 or newY < 0:
+
+            return (newX, extremes[-1] - 1) if isY else (extremes[-1], newY)
+        else:
+            return (newX, -1) if isY else (-1, newY)
+
+    def eat(self):
+        self.score += 1
+        if self.score == (GRID.WIDTH * GRID.HEIGHT) - 1:
+            self.dead = True
+            return
+        self.spawnNewApple()
+        self.tail.append(Coordinates(self.head.x, self.head.y))
+
+    def spawnNewApple(self):
+        while True:
+            x = randint(0, GRID.WIDTH - 1)
+            y = randint(0, GRID.HEIGHT - 1)
+            if Coordinates(x, y) not in (self.head, self.tail):
+                apple = Coordinates(x, y)
+                break
+        self.apple = apple
+
+    def draw(self):
+        for coord in self.tail:
+            self.drawSquare(coord, SNAKE_COLOR)
+        self.drawSquare(self.head, HEAD_COLOR)
+        self.drawSquare(self.apple, APPLE_COLOR)
+
+    def drawSquare(self, coords: Coordinates, color: str, margin=SQUARE_MARGIN):
         self.canvas.create_rectangle(
             self.getPixels(
-                self.apple.x, self.apple.y, self.apple.x + 1, self.apple.y + 1, margin=2
+                coords.x, coords.y, coords.x + 1, coords.y + 1, margin=margin
             ),
-            fill=APPLE_COLOR, outline="")
-        pass
+            fill=color, outline="")
+
+    def moveTail(self):
+        self.tail.insert(0, self.head)
+        self.tail.pop()
 
     @staticmethod
     def getPixels(*args, margin=0) -> tuple:
@@ -96,7 +120,7 @@ class Snake:
         argc = len(tupleCoords)
         pixels = []
         for index, coord in enumerate(tupleCoords):
-            pixelPoint = coord * side
+            pixelPoint = coord * SQUARE_SIDE
             if index < argc // 2:
                 pixelPoint += margin
             else:
@@ -105,54 +129,13 @@ class Snake:
         return tuple(pixels)
 
     @staticmethod
-    def isValidDirection(currentDirection: Direction, newDirection: Direction):
+    def isValidDirection(currentDirection: Directions, newDirection: Directions):
         if currentDirection == newDirection:
             return False
-        if (Direction.UP in (currentDirection, newDirection) and
-                Direction.DOWN in (currentDirection, newDirection)):
+        if (Directions.UP in (currentDirection, newDirection) and
+                Directions.DOWN in (currentDirection, newDirection)):
             return False
-        if (Direction.LEFT in (currentDirection, newDirection) and
-                Direction.RIGHT in (currentDirection, newDirection)):
+        if (Directions.LEFT in (currentDirection, newDirection) and
+                Directions.RIGHT in (currentDirection, newDirection)):
             return False
         return True
-
-    def isSnakeHittingTheWall(self, point):
-        isY = False
-        if self.direction in (Direction.UP, Direction.DOWN):
-            isY = True
-
-        extremes = range(0, GRID.HEIGHT if isY else GRID.WIDTH)
-        if point in extremes:
-            return False
-
-        if not PACMAN_EFFECT:
-            self.dead = True
-            return True
-
-        if point < 0:
-            if isY:
-                self.head = self.head._replace(y=extremes[-1])
-                return True
-            else:
-                self.head = self.head._replace(x=extremes[-1])
-                return True
-        else:
-            if isY:
-                self.head = self.head._replace(y=extremes[0] - 1)
-                return True
-            else:
-                self.head = self.head._replace(x=extremes[0] - 1)
-                return True
-
-    def eat(self):
-        self.score += 1
-        self.spawnNewApple()
-
-    def spawnNewApple(self):
-        while True:
-            x = randint(0, GRID.WIDTH - 1)
-            y = randint(0, GRID.HEIGHT - 1)
-            apple = Coordinates(x, y)
-            if apple != self.head:
-                break
-        self.apple = apple

@@ -2,7 +2,7 @@ from collections import namedtuple
 from typing import Final
 import tkinter
 from Snake import Snake
-from Directions import Direction
+from Directions import Directions
 from CONSTS import BACKGROUND_COLOR, WIDTH, HEIGHT, GRID, FPS
 
 Event = namedtuple("Event", "char")
@@ -72,10 +72,10 @@ class Game:
         key = event.char
         if key in ("s", "w", "a", "d"):
             if key == "s":
-                self.snake.changeDirection(Direction.DOWN)
+                self.snake.changeDirection(Directions.DOWN)
             if key == "w":
-                self.snake.changeDirection(Direction.UP)
+                self.snake.changeDirection(Directions.UP)
             if key == "d":
-                self.snake.changeDirection(Direction.RIGHT)
+                self.snake.changeDirection(Directions.RIGHT)
             if key == "a":
-                self.snake.changeDirection(Direction.LEFT)
+                self.snake.changeDirection(Directions.LEFT)
